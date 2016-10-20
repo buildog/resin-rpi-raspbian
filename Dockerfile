@@ -2,6 +2,9 @@ FROM debian:jessie
 
 ENV TERM xterm
 
+RUN echo "deb http://packages.matrix.one/matrix-creator/ ./" | sudo tee --append /etc/apt/sources.list
+RUN apt-get update && sudo apt-get upgrade
+
 RUN apt-get -q update \
 	&& apt-get -qy install \
 		curl \
@@ -50,8 +53,6 @@ RUN echo "xset s off\nxserver-command=X -s 0 dpms" > ~/.fluxbox/startup
 RUN echo '#!/bin/sh\n\nexec /usr/bin/X -s 0 dpms -nocursor -nolisten tcp "$@"' > /etc/X11/xinit/xserverrc
 
 # MATRIX
-RUN echo "deb http://packages.matrix.one/matrix-creator/ ./" | sudo tee --append /etc/apt/sources.list
-RUN apt-get update && sudo apt-get upgrade
 RUN apt-get -q -y install python build-essential python-dev python-pip
 RUN apt-get install -y libzmq3-dev xc3sprog malos-eye matrix-creator-openocd wiringpi matrix-creator-init matrix-creator-malos cmake g++ git --force-yes;
 
