@@ -1,10 +1,5 @@
 FROM debian:jessie
 
-ENV TERM xterm
-
-RUN echo "deb http://packages.matrix.one/matrix-creator/ ./" | sudo tee --append /etc/apt/sources.list
-RUN apt-get update && sudo apt-get upgrade
-
 RUN apt-get -q update \
 	&& apt-get -qy install \
 		curl \
@@ -15,6 +10,14 @@ RUN apt-get -q update \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN pip install awscli
+
+RUN gpg --recv-keys --keyserver pgp.mit.edu 0x9165938D90FDDD2E
+
+COPY . /usr/src/mkimage
+
+WORKDIR /usr/src/mkimage
+
+CMD ./build.sh
 
 # Install wget and curl
 RUN apt-get update && apt-get install -y \
@@ -52,6 +55,10 @@ RUN mkdir ~/.fluxbox
 RUN echo "xset s off\nxserver-command=X -s 0 dpms" > ~/.fluxbox/startup
 RUN echo '#!/bin/sh\n\nexec /usr/bin/X -s 0 dpms -nocursor -nolisten tcp "$@"' > /etc/X11/xinit/xserverrc
 
+
+RUN echo "deb http://packages.matrix.one/matrix-creator/ ./" | sudo tee --append /etc/apt/sources.list
+RUN apt-get update && sudo apt-get upgrade
+
 # MATRIX
 RUN apt-get -q -y install python build-essential python-dev python-pip
 RUN apt-get install -y libzmq3-dev xc3sprog malos-eye matrix-creator-openocd wiringpi matrix-creator-init matrix-creator-malos cmake g++ git --force-yes;
@@ -68,10 +75,23 @@ RUN pip install pyaudio
 RUN apt-get install libatlas-base-dev
 RUN sudo apt-get install alsa-base alsa-utils
 
-RUN gpg --recv-keys --keyserver pgp.mit.edu 0x9165938D90FDDD2E
+# Save source folder
+RUN printf "%s\n" "${PWD##}" > SOURCEFOLDER
 
-COPY . /usr/src/mkimage
+# Move to app dir
+WORKDIR /usr/src/app
 
-WORKDIR /usr/src/mkimage
+# Move package.json to filesystem
+COPY package.json package.json
 
-CMD ./build.sh
+# NPM i app
+RUN sudo npm i --production
+
+# This will copy all files in our root to the working  directory in the container
+COPY . ./
+
+# NPM rebuild node native modules after electron is installed.
+RUN sudo ./node_modules/.bin/electron-rebuild
+
+## uncomment if you want systemd
+ENV INITSYSTEM on
