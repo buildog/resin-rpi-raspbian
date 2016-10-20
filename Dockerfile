@@ -1,5 +1,7 @@
 FROM debian:jessie
 
+ENV TERM xterm
+
 RUN apt-get -q update \
 	&& apt-get -qy install \
 		curl \
